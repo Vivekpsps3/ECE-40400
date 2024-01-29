@@ -1,3 +1,9 @@
+# Homework Number: HW02
+# Name: Raghava Vivekananda Panchagnula
+# ECN Login: rpanchag
+# Due Date: 1/25/2024
+
+#Heavily Adapted from Lecture Code from Lecture 3
 
 import sys
 from BitVector import *
@@ -91,6 +97,8 @@ class DES():
                     LE = RE
                     RE = modified_RE
                 final_string = RE + LE
+                # final_string = final_string.get_bitvector_in_hex()
+                # FILEIO.write(final_string)
                 final_string.write_to_file(FILEIO)
         FILEIO.close()
         return
@@ -163,7 +171,7 @@ class DES():
         header = bv.read_bits_from_file(112)
         key = self.key
         round_keys = self.generate_round_keys(key)
-        FILEIO = open(outfile, 'wb')
+        FILEIO = open(outfile, 'ab')
         while (bv.more_to_read):
             bitvec = bv.read_bits_from_file(64)
             if bitvec._getsize() > 0:
