@@ -22,6 +22,6 @@ all: clean encrypt decrypt
 
 #add HW02 <last name><first name>.zip with *.pdf, and DES.py
 submit:
-	zip -r HW04_Panchagnula_Raghava.zip HW04_Panchagnula_Raghava.pdf $(PYFILE)
+	zip -r hw04_Panchagnula_Raghava.zip hw04_Panchagnula_Raghava.pdf $(PYFILE)
 
 .PHONY: encrypt decrypt test

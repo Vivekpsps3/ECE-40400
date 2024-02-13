@@ -1,3 +1,8 @@
+# Homework Number: HW04
+# Name: Raghava Vivekananda Panchagnula
+# ECN Login: rpanchag
+# Due Date: 2/13/2024
+
 import sys
 from BitVector import *
 
@@ -10,83 +15,110 @@ class AES():
         # Read the key from the file
         with open(keyfile, 'r') as file:
             key = file.read()
+        # Convert the key into a BitVector
         key_bv = BitVector(textstring = key)
-        self.key_words = gen_key_schedule_256(key_bv)
-        self.round_keys = gen_round_keys(self.key_words)
+        # Generate the key schedule
+        key_words = gen_key_schedule_256(key_bv)
+        # Generate the round keys
+        self.round_keys = gen_round_keys(key_words)
         pass
 
     def encrypt(self, plaintext:str, ciphertext:str) -> None:
+        # Read the plaintext from the file
         bv = BitVector(filename = plaintext)
         FILEOUT = open(ciphertext, 'w')
         output = BitVector(size = 0)
         round_keys = self.round_keys
 
+        # while the bitvector has more bits to read
         while bv.more_to_read:
+            
+            # read 128 bits from the bitvector
+            # if the bitvector has less than 128 bits, pad it with 0s
             bitvec = bv.read_bits_from_file(128)
-            if bitvec.length() > 0:
+            if (bitvec.length() < 128):
                 bitvec.pad_from_right(128 - bitvec.length())
             
+            #perform step 1 of the encryption algorithm
+            # XOR the bitvec with the first round key
             bitvec = bitvec ^ round_keys[0]
             state_array = gen_state_array(bitvec)
- 
+
+            #perform steps 2-13 of the encryption algorithm
+            # for each round key
+            # perform the sub bytes, shift rows, mix columns, and add round key operations
             for i in range(1,14):
                 state_array = sub_bytes(state_array)
                 state_array = shift_rows(state_array)
                 state_array = mix_columns(state_array)
                 state_array = add_round_key(state_array, round_keys[i])
                 state_array = gen_state_array(state_array)
+            #perform step 14 of the encryption algorithm
+            # for the last round key
+            # perform the sub bytes, shift rows, and add round key operations
             state_array = sub_bytes(state_array)
             state_array = shift_rows(state_array)
             state_array = add_round_key(state_array, round_keys[14])
             output += state_array
         
+        # write the output to the file
         output = output.get_bitvector_in_hex()
         FILEOUT.write(output)
         FILEOUT.close()
         
     def decrypt(self, ciphertext:str, decrypted:str) -> None:
+
+        # Read the ciphertext from the file
         FILEIN = open(ciphertext, 'r')
         ciphertext = FILEIN.read()
         FILEIN.close()
         bv = BitVector(hexstring = ciphertext)
 
-        # bv = BitVector(filename = ciphertext)
+        # Initialize the counter
+        counter = 0
+
+        #bv = BitVector(filename = ciphertext)
+        # open the output file and set up vars
         FILEOUT = open(decrypted, 'wb')
         output = BitVector(size = 0)
         round_keys = self.round_keys
         round_keys = round_keys[::-1]
 
-        rem = bv.length() % 128
-        counter = 0
-        if (rem == 0):
-            quotient = bv.length() // 128
-            quotient = quotient + 1
-            quotient = quotient * 128
-            bv.pad_from_right(quotient - bv.length())
+        # while (bv.more_to_read):
+        #     bitvec = bv.read_bits_from_file(128)
 
-        #while(bv.more_to_read):
-        while (bv.length() > counter + 128):
+        # while the bitvector has more bits to read
+        while (bv.length() > counter):
+            # read 128 bits from the bitvector
             bitvec = bv[counter:counter+128]
-            # bitvec = bv.read_bits_from_file(128)
-            # if bitvec.length() < 128:
-            #     bitvec.pad_from_right(128 - bitvec.length())
-            
+
+            #perform step 1 of the decryption algorithm
+            # XOR the bitvec with the first round key
             bitvec = bitvec ^ round_keys[0]
+            # convert the bitvec into a 4x4 state array
             state_array = gen_state_array(bitvec)
- 
+
+            #perform steps 2-13 of the decryption algorithm
+            # for each round key
+            # perform the inverse shift rows, inverse sub bytes, add round key, and inverse mix columns operations
             for i in range(1,14):
                 state_array = inv_shift_rows(state_array)
                 state_array = inv_sub_bytes(state_array)
                 state_array = add_round_key(state_array, round_keys[i])
                 state_array = gen_state_array(state_array)
                 state_array = inv_mix_columns(state_array)
-
+            #perform step 14 of the decryption algorithm
+            # for the last round key
+            # perform the inverse shift rows, inverse sub bytes, and add round key operations
             state_array = inv_shift_rows(state_array)
             state_array = inv_sub_bytes(state_array)
             state_array = add_round_key(state_array, round_keys[14])
+
+            # convert the state array into a bitvector and append it to the output
             output += state_array
             counter += 128
-        
+
+        # write the output to the file
         output.write_to_file(FILEOUT)
         FILEOUT.close()
 
@@ -168,84 +200,111 @@ def gee(keyword, round_constant, byte_sub_table):
     return newword, round_constant
 
 def gen_state_array(bitvec):
+    # Convert the bitvec into a 4x4 state array
+
+    # First we create a 4x4 array of ints:
     state_array = [[0 for i in range(4)] for j in range(4)]
+
+    # Next we populate the state_array:
     for i in range(4):
         for j in range(4):
+            # 32*i+8*j:32*i+8*j+8 is the range of bits for the j-th byte of the i-th word
             state_array[j][i] = bitvec[32*i+8*j:32*i+8*j+8].int_val()
 
     return state_array
 
 def sub_bytes(state_array):
+    # For the encryption SBox:
+    # take the input from the state_array and return the substitute value from the subBytesTable
     for i in range(4):
         for j in range(4):
             state_array[i][j] = subBytesTable[state_array[i][j]]
     return state_array
 
 def inv_sub_bytes(state_array):
+    # For the decryption SBox:
+    # take the input from the state_array and return the substitute value from the invSubBytesTable
     for i in range(4):
         for j in range(4):
             state_array[i][j] = invSubBytesTable[state_array[i][j]]
     return state_array
 
 def shift_rows(state_array):
+    # Shift the second row 1 to the left, the third row 2 to the left, and the fourth row 3 to the left
     state_array[1] = state_array[1][1:] + state_array[1][:1]
     state_array[2] = state_array[2][2:] + state_array[2][:2]
     state_array[3] = state_array[3][3:] + state_array[3][:3]
     return state_array
 
 def inv_shift_rows(state_array):
+    # Shift the second row 1 to the right, the third row 2 to the right, and the fourth row 3 to the right
+
     state_array[1] = state_array[1][3:] + state_array[1][:3]
     state_array[2] = state_array[2][2:] + state_array[2][:2]
     state_array[3] = state_array[3][1:] + state_array[3][:1]
     return state_array
 
 def mix_columns(state_array):
-    for i in range(4):
-        for j in range(4):
-            state_array[i][j] = BitVector(intVal = state_array[i][j], size=8)
+    # First we convert the state_array into a 4x4 matrix of bvs:
+    state_array = [[BitVector(intVal = state_array[j][i], size=8) for i in range(4)] for j in range(4)]
     
-    mix_col = [[BitVector(size=8) for i in range(4)] for j in range(4)]
+    # next we make a deep copy of the state_array and store it in mix_col:
+    mix_col = [[state_array[j][i].deep_copy() for i in range(4)] for j in range(4)]
 
+    # next we perform the mixColumns operation:
     for i in range(4):
-        for j in range(4):
-            mix_col[i][j] = state_array[i][j].deep_copy()
-
-    for i in range(4):
-        state_array[0][i] = mix_col[0][i].gf_multiply_modular(BitVector(intVal = 0x02), AES_modulus, 8) ^ mix_col[1][i].gf_multiply_modular(BitVector(intVal = 0x03), AES_modulus, 8) ^ mix_col[2][i] ^ mix_col[3][i]
-        state_array[1][i] = mix_col[0][i] ^ mix_col[1][i].gf_multiply_modular(BitVector(intVal = 0x02), AES_modulus, 8) ^ mix_col[2][i].gf_multiply_modular(BitVector(intVal = 0x03), AES_modulus, 8) ^ mix_col[3][i]
+        state_array[0][i] = (mix_col[0][i].gf_multiply_modular(BitVector(intVal = 0x02), AES_modulus, 8) ^ 
+                             mix_col[1][i].gf_multiply_modular(BitVector(intVal = 0x03), AES_modulus, 8) ^ 
+                             mix_col[2][i] ^ 
+                             mix_col[3][i])
+        state_array[1][i] = (mix_col[0][i] ^ 
+                             mix_col[1][i].gf_multiply_modular(BitVector(intVal = 0x02), AES_modulus, 8) ^ 
+                             mix_col[2][i].gf_multiply_modular(BitVector(intVal = 0x03), AES_modulus, 8) ^ 
+                             mix_col[3][i])
         state_array[2][i] = mix_col[0][i] ^ mix_col[1][i] ^ mix_col[2][i].gf_multiply_modular(BitVector(intVal = 0x02), AES_modulus, 8) ^ mix_col[3][i].gf_multiply_modular(BitVector(intVal = 0x03), AES_modulus, 8)
         state_array[3][i] = mix_col[0][i].gf_multiply_modular(BitVector(intVal = 0x03), AES_modulus, 8) ^ mix_col[1][i] ^ mix_col[2][i] ^ mix_col[3][i].gf_multiply_modular(BitVector(intVal = 0x02), AES_modulus, 8)
     
+    # Finally, we convert the state_array back into a 4x4 matrix of ints:
     for i in range(4):
         for j in range(4):
             state_array[i][j] = state_array[i][j].int_val()
     
+    # and we return the state array
     return state_array
 
 def inv_mix_columns(state_array):
-    for i in range(4):
-        for j in range(4):
-            state_array[i][j] = BitVector(intVal = state_array[i][j], size=8)
+
+    # First we convert the state_array into a 4x4 matrix of bvs:    
+    state_array = [[BitVector(intVal = state_array[j][i], size=8) for i in range(4)] for j in range(4)]
     
-    mix_col = [[BitVector(size=8) for i in range(4)] for j in range(4)]
+    # next we make a deep copy of the state_array and store it in mix_col:
+    mix_col = [[state_array[j][i].deep_copy() for i in range(4)] for j in range(4)]
 
-    for i in range(4):
-        for j in range(4):
-            mix_col[i][j] = state_array[i][j].deep_copy()
-
+    # next we perform the invMixColumns operation:
     for i in range(4):
         state_array[0][i] = mix_col[0][i].gf_multiply_modular(BitVector(intVal = 0x0e), AES_modulus, 8) ^ mix_col[1][i].gf_multiply_modular(BitVector(intVal = 0x0b), AES_modulus, 8) ^ mix_col[2][i].gf_multiply_modular(BitVector(intVal = 0x0d), AES_modulus, 8) ^ mix_col[3][i].gf_multiply_modular(BitVector(intVal = 0x09), AES_modulus, 8)
         state_array[1][i] = mix_col[0][i].gf_multiply_modular(BitVector(intVal = 0x09), AES_modulus, 8) ^ mix_col[1][i].gf_multiply_modular(BitVector(intVal = 0x0e), AES_modulus, 8) ^ mix_col[2][i].gf_multiply_modular(BitVector(intVal = 0x0b), AES_modulus, 8) ^ mix_col[3][i].gf_multiply_modular(BitVector(intVal = 0x0d), AES_modulus, 8)
         state_array[2][i] = mix_col[0][i].gf_multiply_modular(BitVector(intVal = 0x0d), AES_modulus, 8) ^ mix_col[1][i].gf_multiply_modular(BitVector(intVal = 0x09), AES_modulus, 8) ^ mix_col[2][i].gf_multiply_modular(BitVector(intVal = 0x0e), AES_modulus, 8) ^ mix_col[3][i].gf_multiply_modular(BitVector(intVal = 0x0b), AES_modulus, 8)
         state_array[3][i] = mix_col[0][i].gf_multiply_modular(BitVector(intVal = 0x0b), AES_modulus, 8) ^ mix_col[1][i].gf_multiply_modular(BitVector(intVal = 0x0d), AES_modulus, 8) ^ mix_col[2][i].gf_multiply_modular(BitVector(intVal = 0x09), AES_modulus, 8) ^ mix_col[3][i].gf_multiply_modular(BitVector(intVal = 0x0e), AES_modulus, 8)
     
+    # Finally, we convert the state_array back into a 4x4 matrix of ints:
     for i in range(4):
         for j in range(4):
             state_array[i][j] = state_array[i][j].int_val()
     
+    # and return the state_array:
     return state_array
 
 def get_bv_from_state_array(state_array):
+    """
+    Converts a 4x4 state array into a BitVector.
+
+    Args:
+        state_array (list): The 4x4 state array.
+
+    Returns:
+        BitVector: The BitVector representation of the state array.
+    """
     bv = BitVector(size=0)
     for i in range(4):
         for j in range(4):
@@ -256,6 +315,16 @@ def get_bv_from_state_array(state_array):
     return bv
 
 def add_round_key(state_array, round_key):
+    """
+    Adds the round key to the state array using bitwise XOR.
+
+    Args:
+        state_array (list of lists of ints): The state array.
+        round_key (bv): The round key.
+
+    Returns:
+        bv: The result of adding the round key to the state array.
+    """
     state_array = get_bv_from_state_array(state_array)
     state_array ^= round_key
     return state_array
@@ -265,16 +334,19 @@ if __name__ == "__main__":
     if len(sys.argv) != 5:
         sys.exit("Incorrect number of CLI arguments. Please use -e or -d as the first argument, the input file as the second argument, the key file as the third argument, and the output file as the fourth argument.")
     
+    # Get the CLI arguments
     task = sys.argv[1]
     input_file = sys.argv[2]
     key_file = sys.argv[3]
     output_file = sys.argv[4]
 
+    # Create an AES object
     cipher = AES(keyfile=key_file)
 
+    # Encrypt or decrypt based on the CLI argument
     if task == "-e":
         cipher.encrypt(plaintext = input_file, ciphertext = output_file)
     elif task == "-d":
         cipher.decrypt(ciphertext = input_file, decrypted = output_file)
     else:
-        sys.exit("Incorrect CLI argument. Please use -e or -d.")
+        sys.exit("Incorrect CLI argument. Please use -e or -d.")    
