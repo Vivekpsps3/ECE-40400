@@ -36,7 +36,7 @@ def genTables():
         invSubBytesTable.append(int(b))
 
 genTables()
-print "SBox for Encryption:"
-print subBytesTable
-print "\nSBox for Decryption:"
-print invSubBytesTable
+print ("SBox for Encryption:")
+print (subBytesTable)
+print ("\nSBox for Decryption:")
+print (invSubBytesTable)
