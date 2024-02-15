@@ -1,7 +1,7 @@
-# Homework Number: HW04
+# Homework Number: HW05
 # Name: Raghava Vivekananda Panchagnula
 # ECN Login: rpanchag
-# Due Date: 2/13/2024
+# Due Date: 2/20/2024
 
 import sys
 from BitVector import *
@@ -125,12 +125,82 @@ class AES():
     def ctr_aes_image(self, iv, image_file, enc_image):
         """
         Encrypts the image using AES in CTR mode.
-        
         """
+        round_keys = self.round_keys
 
+        FILEIN = open(image_file, 'rb')
+        FILEOUT = open(enc_image, 'wb')
 
+        for i in range(3):
+            FILEOUT.write(FILEIN.readline())
         
+        FILEIN.close()
 
+        bv = BitVector(filename = image_file)
+        header_bits = bv.read_bits_from_file(112)
+
+        while(bv.more_to_read):
+            bitvec = bv.read_bits_from_file(128)
+            if (bitvec.length() < 128):
+                bitvec.pad_from_right(128 - bitvec.length())
+            
+            #block_encryption starts here
+            enc_block = block_encrypt(iv, round_keys)
+
+            block_encrypted = enc_block ^ bitvec
+            block_encrypted.write_to_file(FILEOUT)
+
+            iv = BitVector(intVal = iv.int_val() + 1, size = 128)
+        FILEOUT.close()
+    
+    def x931(self , v0 , dt , totalNum , outfile):
+        """
+        Inputs:
+        v0: 128-bit seed value
+        dt: 128-bit date/time value
+        totalNum: Total number of pseudo-random numbers to generate
+        outfile: The file to write the pseudo-random numbers to
+        """
+        round_keys = self.round_keys
+        rand_num_list = []
+
+        encoder = block_encrypt(dt, round_keys)
+        for i in range(totalNum):
+            rand_num = block_encrypt(encoder^v0, round_keys)
+            rand_num_list.append(rand_num)
+            v0 = block_encrypt(encoder^rand_num, round_keys)
+
+        with open(outfile, 'w') as file:
+            for num in rand_num_list:
+                file.write(str(num.int_val()))
+                file.write("\n")
+        
+        
+def block_encrypt(bitvec, round_keys):
+    """
+    Encrypts the block using AES in CTR mode.
+    """
+    bitvec = bitvec ^ round_keys[0]
+    state_array = gen_state_array(bitvec)
+
+    #perform steps 2-13 of the encryption algorithm
+    # for each round key
+    # perform the sub bytes, shift rows, mix columns, and add round key operations
+    for i in range(1,14):
+        state_array = sub_bytes(state_array)
+        state_array = shift_rows(state_array)
+        state_array = mix_columns(state_array)
+        state_array = add_round_key(state_array, round_keys[i])
+        state_array = gen_state_array(state_array)
+    
+    #perform step 14 of the encryption algorithm
+    # for the last round key
+    # perform the sub bytes, shift rows, and add round key operations
+    state_array = sub_bytes(state_array)
+    state_array = shift_rows(state_array)
+    state_array = add_round_key(state_array, round_keys[14])
+
+    return state_array
 
 def gen_round_keys(key_words):
     key_schedule = []
@@ -358,6 +428,8 @@ if __name__ == "__main__":
     elif task == "-d":
         cipher.decrypt(ciphertext = input_file, decrypted = output_file)
     elif task == "-i":
-        cipher.ctr_aes_image(iv = BitVector(textstring="counter -mode -ctr"), image_file = input_file, enc_image = output_file)
+        cipher.ctr_aes_image(iv = BitVector(textstring="counter-mode-ctr"), image_file = input_file, enc_image = output_file)
+    elif task == "-r":
+        cipher.x931(v0 = BitVector(textstring="counter-mode-ctr"),dt=BitVector(intVal=501,size=128), totalNum = int(input_file), outfile = output_file)
     else:
-        sys.exit("Incorrect CLI argument. Please use -e or -d.")    
+        sys.exit("Incorrect CLI argument. Please use -e or -d or -i.")    

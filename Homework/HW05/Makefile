@@ -4,6 +4,7 @@ KEY = key.txt
 ENC = encrypted.txt
 DEC = decrypted.txt
 IMG = image.ppm
+RAND = random_numbers.txt
 img_enc = enc_image.ppm
 PYFILE = AES.py
 
@@ -18,7 +19,10 @@ decrypt:
 image:
 	python3 $(PYFILE) -i $(IMG) $(KEY) $(img_enc)
 
-test: encrypt decrypt
+random:
+	python3 $(PYFILE) -r 5 $(KEY) $(RAND)
+
+test: encrypt decrypt image random
 
 clean:
 	rm -f $(ENC) $(DEC) *.zip
