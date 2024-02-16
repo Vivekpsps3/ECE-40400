@@ -175,7 +175,6 @@ class AES():
                 file.write(str(num.int_val()))
                 file.write("\n")
         
-        
 def block_encrypt(bitvec, round_keys):
     """
     Encrypts the block using AES in CTR mode.
@@ -327,26 +326,26 @@ def mix_columns(state_array):
     # First we convert the state_array into a 4x4 matrix of bvs:
     state_array = [[BitVector(intVal = state_array[j][i], size=8) for i in range(4)] for j in range(4)]
     
-    # next we make a deep copy of the state_array and store it in mix_col:
-    mix_col = [[state_array[j][i].deep_copy() for i in range(4)] for j in range(4)]
+    # next we make an intermediary 4x4 matrix
+    mix_col = [[0 for i in range(4)] for j in range(4)]
 
     # next we perform the mixColumns operation:
     for i in range(4):
-        state_array[0][i] = (mix_col[0][i].gf_multiply_modular(BitVector(intVal = 0x02), AES_modulus, 8) ^ 
-                             mix_col[1][i].gf_multiply_modular(BitVector(intVal = 0x03), AES_modulus, 8) ^ 
-                             mix_col[2][i] ^ 
-                             mix_col[3][i])
-        state_array[1][i] = (mix_col[0][i] ^ 
-                             mix_col[1][i].gf_multiply_modular(BitVector(intVal = 0x02), AES_modulus, 8) ^ 
-                             mix_col[2][i].gf_multiply_modular(BitVector(intVal = 0x03), AES_modulus, 8) ^ 
-                             mix_col[3][i])
-        state_array[2][i] = mix_col[0][i] ^ mix_col[1][i] ^ mix_col[2][i].gf_multiply_modular(BitVector(intVal = 0x02), AES_modulus, 8) ^ mix_col[3][i].gf_multiply_modular(BitVector(intVal = 0x03), AES_modulus, 8)
-        state_array[3][i] = mix_col[0][i].gf_multiply_modular(BitVector(intVal = 0x03), AES_modulus, 8) ^ mix_col[1][i] ^ mix_col[2][i] ^ mix_col[3][i].gf_multiply_modular(BitVector(intVal = 0x02), AES_modulus, 8)
+        mix_col[0][i] = (state_array[0][i].gf_multiply_modular(BitVector(intVal = 0x02), AES_modulus, 8) ^ 
+                         state_array[1][i].gf_multiply_modular(BitVector(intVal = 0x03), AES_modulus, 8) ^ 
+                         state_array[2][i] ^ 
+                         state_array[3][i])
+        mix_col[1][i] = (state_array[0][i] ^ 
+                         state_array[1][i].gf_multiply_modular(BitVector(intVal = 0x02), AES_modulus, 8) ^ 
+                         state_array[2][i].gf_multiply_modular(BitVector(intVal = 0x03), AES_modulus, 8) ^ 
+                         state_array[3][i])
+        mix_col[2][i] = state_array[0][i] ^ state_array[1][i] ^ state_array[2][i].gf_multiply_modular(BitVector(intVal = 0x02), AES_modulus, 8) ^ state_array[3][i].gf_multiply_modular(BitVector(intVal = 0x03), AES_modulus, 8)
+        mix_col[3][i] = state_array[0][i].gf_multiply_modular(BitVector(intVal = 0x03), AES_modulus, 8) ^ state_array[1][i] ^ state_array[2][i] ^ state_array[3][i].gf_multiply_modular(BitVector(intVal = 0x02), AES_modulus, 8)
     
     # Finally, we convert the state_array back into a 4x4 matrix of ints:
     for i in range(4):
         for j in range(4):
-            state_array[i][j] = state_array[i][j].int_val()
+            state_array[i][j] = mix_col[i][j].int_val()
     
     # and we return the state array
     return state_array
@@ -357,19 +356,19 @@ def inv_mix_columns(state_array):
     state_array = [[BitVector(intVal = state_array[j][i], size=8) for i in range(4)] for j in range(4)]
     
     # next we make a deep copy of the state_array and store it in mix_col:
-    mix_col = [[state_array[j][i].deep_copy() for i in range(4)] for j in range(4)]
+    mix_col = [[0 for i in range(4)] for j in range(4)]
 
     # next we perform the invMixColumns operation:
     for i in range(4):
-        state_array[0][i] = mix_col[0][i].gf_multiply_modular(BitVector(intVal = 0x0e), AES_modulus, 8) ^ mix_col[1][i].gf_multiply_modular(BitVector(intVal = 0x0b), AES_modulus, 8) ^ mix_col[2][i].gf_multiply_modular(BitVector(intVal = 0x0d), AES_modulus, 8) ^ mix_col[3][i].gf_multiply_modular(BitVector(intVal = 0x09), AES_modulus, 8)
-        state_array[1][i] = mix_col[0][i].gf_multiply_modular(BitVector(intVal = 0x09), AES_modulus, 8) ^ mix_col[1][i].gf_multiply_modular(BitVector(intVal = 0x0e), AES_modulus, 8) ^ mix_col[2][i].gf_multiply_modular(BitVector(intVal = 0x0b), AES_modulus, 8) ^ mix_col[3][i].gf_multiply_modular(BitVector(intVal = 0x0d), AES_modulus, 8)
-        state_array[2][i] = mix_col[0][i].gf_multiply_modular(BitVector(intVal = 0x0d), AES_modulus, 8) ^ mix_col[1][i].gf_multiply_modular(BitVector(intVal = 0x09), AES_modulus, 8) ^ mix_col[2][i].gf_multiply_modular(BitVector(intVal = 0x0e), AES_modulus, 8) ^ mix_col[3][i].gf_multiply_modular(BitVector(intVal = 0x0b), AES_modulus, 8)
-        state_array[3][i] = mix_col[0][i].gf_multiply_modular(BitVector(intVal = 0x0b), AES_modulus, 8) ^ mix_col[1][i].gf_multiply_modular(BitVector(intVal = 0x0d), AES_modulus, 8) ^ mix_col[2][i].gf_multiply_modular(BitVector(intVal = 0x09), AES_modulus, 8) ^ mix_col[3][i].gf_multiply_modular(BitVector(intVal = 0x0e), AES_modulus, 8)
+        mix_col[0][i] = state_array[0][i].gf_multiply_modular(BitVector(intVal = 0x0e), AES_modulus, 8) ^ state_array[1][i].gf_multiply_modular(BitVector(intVal = 0x0b), AES_modulus, 8) ^ state_array[2][i].gf_multiply_modular(BitVector(intVal = 0x0d), AES_modulus, 8) ^ state_array[3][i].gf_multiply_modular(BitVector(intVal = 0x09), AES_modulus, 8)
+        mix_col[1][i] = state_array[0][i].gf_multiply_modular(BitVector(intVal = 0x09), AES_modulus, 8) ^ state_array[1][i].gf_multiply_modular(BitVector(intVal = 0x0e), AES_modulus, 8) ^ state_array[2][i].gf_multiply_modular(BitVector(intVal = 0x0b), AES_modulus, 8) ^ state_array[3][i].gf_multiply_modular(BitVector(intVal = 0x0d), AES_modulus, 8)
+        mix_col[2][i] = state_array[0][i].gf_multiply_modular(BitVector(intVal = 0x0d), AES_modulus, 8) ^ state_array[1][i].gf_multiply_modular(BitVector(intVal = 0x09), AES_modulus, 8) ^ state_array[2][i].gf_multiply_modular(BitVector(intVal = 0x0e), AES_modulus, 8) ^ state_array[3][i].gf_multiply_modular(BitVector(intVal = 0x0b), AES_modulus, 8)
+        mix_col[3][i] = state_array[0][i].gf_multiply_modular(BitVector(intVal = 0x0b), AES_modulus, 8) ^ state_array[1][i].gf_multiply_modular(BitVector(intVal = 0x0d), AES_modulus, 8) ^ state_array[2][i].gf_multiply_modular(BitVector(intVal = 0x09), AES_modulus, 8) ^ state_array[3][i].gf_multiply_modular(BitVector(intVal = 0x0e), AES_modulus, 8)
     
     # Finally, we convert the state_array back into a 4x4 matrix of ints:
     for i in range(4):
         for j in range(4):
-            state_array[i][j] = state_array[i][j].int_val()
+            state_array[i][j] = mix_col[i][j].int_val()
     
     # and return the state_array:
     return state_array
@@ -428,7 +427,11 @@ if __name__ == "__main__":
     elif task == "-d":
         cipher.decrypt(ciphertext = input_file, decrypted = output_file)
     elif task == "-i":
+        import time
+        start = time.time()
         cipher.ctr_aes_image(iv = BitVector(textstring="counter-mode-ctr"), image_file = input_file, enc_image = output_file)
+        end = time.time()
+        print("Time taken for image encryption: ", end - start)
     elif task == "-r":
         cipher.x931(v0 = BitVector(textstring="counter-mode-ctr"),dt=BitVector(intVal=501,size=128), totalNum = int(input_file), outfile = output_file)
     else:
