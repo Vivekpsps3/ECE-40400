@@ -127,17 +127,23 @@ class AES():
         Encrypts the image using AES in CTR mode.
         """
         round_keys = self.round_keys
+        headers_list = []
 
         FILEIN = open(image_file, 'rb')
         FILEOUT = open(enc_image, 'wb')
 
         for i in range(3):
-            FILEOUT.write(FILEIN.readline())
+            temp_var = FILEIN.readline()
+            FILEOUT.write(temp_var)
+            headers_list.append(temp_var)
         
         FILEIN.close()
+        header = b''.join(headers_list)
+        header_bv = BitVector(rawbytes = header)
 
         bv = BitVector(filename = image_file)
-        header_bits = bv.read_bits_from_file(112)
+        header_bits_length = header_bv.length()
+        bv.read_bits_from_file(header_bits_length)
 
         while(bv.more_to_read):
             bitvec = bv.read_bits_from_file(128)
@@ -146,11 +152,10 @@ class AES():
             
             #block_encryption starts here
             enc_block = block_encrypt(iv, round_keys)
-
             block_encrypted = enc_block ^ bitvec
             block_encrypted.write_to_file(FILEOUT)
-
             iv = BitVector(intVal = iv.int_val() + 1, size = 128)
+
         FILEOUT.close()
     
     def x931(self , v0 , dt , totalNum , outfile):
@@ -427,11 +432,7 @@ if __name__ == "__main__":
     elif task == "-d":
         cipher.decrypt(ciphertext = input_file, decrypted = output_file)
     elif task == "-i":
-        import time
-        start = time.time()
         cipher.ctr_aes_image(iv = BitVector(textstring="counter-mode-ctr"), image_file = input_file, enc_image = output_file)
-        end = time.time()
-        print("Time taken for image encryption: ", end - start)
     elif task == "-r":
         cipher.x931(v0 = BitVector(textstring="counter-mode-ctr"),dt=BitVector(intVal=501,size=128), totalNum = int(input_file), outfile = output_file)
     else:

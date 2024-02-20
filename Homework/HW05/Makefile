@@ -23,6 +23,8 @@ random:
 	python3 $(PYFILE) -r 5 $(KEY) $(RAND)
 
 test: encrypt decrypt image random
+	python3 $(PYFILE) -i $(img_enc) $(KEY) test.ppm
+	diff $(IMG) test.ppm
 
 clean:
 	rm -f $(ENC) $(DEC) *.zip
