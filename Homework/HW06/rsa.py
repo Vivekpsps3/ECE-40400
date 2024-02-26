@@ -7,8 +7,6 @@ import sys
 from BitVector import *
 from PrimeGenerator import *
 
-p_file = "p.txt"
-q_file = "q.txt"
 
 class RSA():
     def __init__(self,e) -> None:
