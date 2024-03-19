@@ -14,8 +14,7 @@ class TcpAttack:
         self.targetIP = targetIP
 
     def scanTarget(self, rangeStart: int, rangeEnd: int)->None:
-        verbosity = 0;        # set it to 1 if you want to see the result for each   #(1)
-                            # port separately as the scan is taking place
+        verbosity = 0;
 
         dst_host = self.targetIP                                                      #(2)
         start_port = rangeStart                                              #(3)
@@ -27,13 +26,15 @@ class TcpAttack:
             sock = socket.socket( socket.AF_INET, socket.SOCK_STREAM )               #(7)
             sock.settimeout(0.1)                                                     #(8)
             try:                                                                     #(9)
-                sock.connect( (dst_host, testport) )                                 #(10)
-                open_ports.append(testport)                                          #(11)
+                sock.connect( (dst_host, testport))
+                open_ports.append(testport)
                 if verbosity: 
-                    print("Open Port Found! - ",testport)                                       #(12)                                                  #(14)
-            except:                                                                  #(15)
+                    print("Open Port Found! - ",testport)  
+                sock.close()                                                             
+            except:
+                sock.close()                                                             
                 if verbosity: 
-                    print ("Port closed: ", testport  )                      #(16)
+                    print ("Port closed: ", testport  )
 
         # Now scan through the /etc/services file, if available, so that we can
         # find out what services are provided by the open ports.  The goal here
@@ -93,9 +94,10 @@ class TcpAttack:
 if __name__ == "__main__":
     spoofIP = "10.10.10.10"
     targetIP = "moonshine.ecn.purdue.edu"
+    #targetIP = "10.0.0.229" #test LAN IP
 
-    rangeStart = 1700
-    rangeEnd = 1800
+    rangeStart = 1000
+    rangeEnd = 5000
 
     numSyn = 10
 
