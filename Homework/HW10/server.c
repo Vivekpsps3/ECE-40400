@@ -16,6 +16,10 @@
 //
 // where 9000 is the port you want your server to monitor.  Of course,
 // this can be any high-numbered that is not currently being used by others.
+// # Homework Number: HW10
+// # Name: Raghava Vivekananda Panchagnula
+// # ECN Login: rpanchag
+// # Due Date: 4/04/2024
 
 #include <stdio.h> 
 #include <stdlib.h> 
@@ -118,7 +122,13 @@ char * clientComm(int clntSockfd,int * senderBuffSize_addr, int * optlen_addr){
         exit(1);
     }    
 
-    strcpy(str, recvBuff);
+    
+    //strcpy(str, recvBuff); /* Use strcpy to copy the data from recvBuff to str */
+    // The original code is vulnerable to buffer overflow attacks. This is because the strcpy function does not check the size of the destination buffer.
+    // We can instead use strncpy to copy the data from recvBuff to str. This way, we can specify the size of the destination buffer.
+    // The max size of the destination buffer is MAX_DATA_SIZE, so we can use this as the size parameter for strncpy.
+    // This way we can avoid buffer overflow attacks.
+    strncpy(str, recvBuff, MAX_DATA_SIZE); /* Use strncpy instead of strcpy so that we discard the extra bytes of data*/
 	
     /* send data to the client */
     if (send(clntSockfd, str, strlen(str), 0) == -1) {
