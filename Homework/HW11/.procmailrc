@@ -1,0 +1,64 @@
+SHELL=/bin/sh
+PATH=/usr/local/lib/mh:$PATH
+MAILDIR=$HOME/Mail
+LOGFILE=$HOME/Mail/logfile
+SENDMAIL=/usr/sbin/sendmail
+# Homework Number: HW11
+# Name: Raghava Vivekananda Panchagnula
+# ECN Login: rpanchag
+# Due Date: 4/11/2024
+
+#VERBOSE=1
+VERBOSE=0
+EOL="
+"
+LOG="$EOL$EOL$EOL"
+LOG="New message log:$EOL"
+LOG=`perl GET_MESSAGE_INDEX`
+LOG="$EOL"
+
+
+
+## Recipe_1:
+## Filter emails with multiple senders
+## It does so by checking if the From field has more than one email address
+:0
+*^From.*@.*@.*
+recipe_1
+
+## Recipe_2:
+## Filter emails with problematic subjects
+## It does so by checking if the subject contains any of the following words
+## I found these words by looking at the spam emails in the junk folder and matching them with the words in the subject
+:0
+*^Subject.*(diploma|MBA|PHD|diploma|VerifiableDiploma|bonuses|safe|career|graduate|watches|measures|free|mock|countries|fast|single|Partner|action|protection|guaranteed|accredited|secure|quick|degree|certification)
+recipe_2
+
+## Recipe_3:
+## filter emails with problematic body content
+## It does so by checking if the body contains any of the following words
+:0 B:
+* (Price|Poker|casino|casinos|gambling|Casino)
+recipe_3
+
+## Recipe_4:
+## Check for HTML or plain text emails
+## All the emails seem to have a lot of embedded sites or links or images. So I am checking for the content type of the email.
+## If the content type is text/plain then it means that the email is a plain text email, if it is text/html then it is an HTML email and if it is multipart/alternative then it is a mixed email.
+## The assumption is that the emails with the content transfer encoding of base64 are the ones that are spam emails, since they are encoded and are not plain text. This means they are containing some sort of image or link or something that is not plain text.
+:0 HB:
+* ^Content-Type: text/plain
+* ^Content-Type: text/html
+* ^Content-Type: multipart/alternative
+* ^Content-Transfer-Encoding: base64
+recipe_4
+
+# ## Recipe_5:
+# ## 
+# ## The rest of the email to your special account will be 
+# ## deposited in the file spamFolder
+# ##
+# :0 :
+# spamFolder
+
+
